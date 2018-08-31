@@ -155,10 +155,13 @@ function synchronizeControl() {
                     break;
                 }
             } 
+            
+            // handle '0 key' to toggle broadcast / reacting to messages.
+            if(eventAction.key == '0' && eventAction.type == 'keyup') stopBroadcast = !stopBroadcast // toggle
+            
+            // check propagation condition
             if(stopBroadcast) return;
 
-            // handle Enter key
-            if(eventAction.key == 'Enter') stopBroadcast = !stopBroadcast // toggle
 
             // Extract properies
             eventActionObject = {
@@ -186,8 +189,8 @@ function synchronizeControl() {
     }
 
     console.group('%c%s',  'color: Green; font-weight: bold;', `🕹️ Synchronizing control to other tabs.`)
-    console.log('%c%s',  'color: Grey;', `• Hold Shift key to temporarly stop propagation of user event.`)
-    console.log('%c%s',  'color: Grey;', `• Click Enter key to toggle propagation of user event.`)
+    console.log('%c%s',  'color: Grey;', `• Hold 'Shift key' to temporarly stop propagation of user event.`)
+    console.log('%c%s',  'color: Grey;', `• Click '0 key' to toggle propagation of user event.`)
     console.groupEnd()
 }    
 
