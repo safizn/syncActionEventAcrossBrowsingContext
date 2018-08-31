@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        DiepIOSyncControl
 // @description Diep.io
-// @version     1.0.0
+// @version     2.0.1
 // @author      tampermonkey
 // @include     http://diep.io/*
 // @connect     diep.io
@@ -129,13 +129,28 @@ broadcastChannel.onmessage = ({ data: actionEvent}) => {
 /* 
 *   Add action event listener & broadcast event
 */
-let evenTypeArray = ['keydown', 'keyup', 'mousedown', 'mouseup', 'mousemove'] // event to propagate to other contexts 
+let evenTypeArray = ['keydown', 'keyup', 'mousedown', 'mouseup', 'mousemove'] // event to propagate to other contexts
+let shiftKeyHold = false; // state of shift key. Is user holding shift key ?
 for(let eventType of evenTypeArray) {
     document.addEventListener(eventType, eventAction => {
         // check if event triggered by a user and not programmatically (prevent infinite loop)
         if(!eventAction.isTrusted) return;
 
-        // TODO: Check for holding shift key
+        console.log(eventAction)
+        // Check for shift key - holding shift key will prevent propagation
+        if(eventAction.key == 'Shift') {
+            switch (eventAction.type) {
+                case 'keydown':
+                    shiftKeyHold = true
+                    console.log('🕹️ Propagation stopped')
+                break;
+                case 'keyup':
+                    shiftKeyHold = false
+                    console.log('🕹️ Propagation active')
+                break;
+            }
+        } 
+        if(shiftKeyHold) return;
 
         // Extract properies
         eventActionObject = {
@@ -150,8 +165,6 @@ for(let eventType of evenTypeArray) {
         }
         // let eventActionObject = { ...eventAction } // Event properties are propagated to higher prtotype chain // shallow copy, to extract only non nested & non methods values.
         // let eventActionObject = JSON.parse(JSON.stringify(eventAction)) // because Event has functions, JSON.strigify cannot handle it properly. // Insures all methods/functions are removed, as postMessage accepts only objects.
-
-        console.log(eventActionObject)
 
         // Propagate current browsing context's action event
         broadcastChannel.postMessage(eventActionObject)
