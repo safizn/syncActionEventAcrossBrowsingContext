@@ -140,7 +140,8 @@ function synchronizeControl() {
             // check if event triggered by a user and not programmatically (prevent infinite loop)
             if(!eventAction.isTrusted) return;
     
-            console.log(eventAction)
+            // console.log(eventAction)
+
             // Check for shift key - holding shift key will prevent propagation
             if(eventAction.key == 'Shift') {
                 switch (eventAction.type) {
