@@ -81,10 +81,10 @@ function GetCoordClamp(mouseX, mouseY)
 // here are used specific calculations of viewport dimension differences between message sender and receiver tabs, taking into account specific diep.io canvas values.
 function simulateMouseMove({ type, clientX, clientY, senderContextViewportWidth, senderContextViewportHeight }) {
     let eventTarget = (typeof canvas !== 'undefined') ? canvas : document;
-    let cX = (clientX / senderContextViewportHeight) * window.innerWidth /* of receiver */;
-    let cY = (clientY / senderContextViewportWidth) * window.innerHeight;
-    let dX = clientX - (window.innerWidth / 2)
-    let dY = clientY - (window.innerHeight / 2)
+    let cX = (clientX / senderContextViewportWidth) * window.innerWidth /* of receiver */;
+    let cY = (clientY / senderContextViewportHeight) * window.innerHeight;
+    let dX = clientX - (senderContextViewportWidth / 2)
+    let dY = clientY - (senderContextViewportHeight / 2)
 
     let clamped = GetCoordClamp(dX + window.innerWidth / 2, dY + window.innerHeight / 2);
     eventTarget.dispatchEvent(new MouseEvent(type, { 'clientX': clamped[0], 'clientY': clamped[1] }));
