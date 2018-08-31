@@ -104,78 +104,90 @@ function simulateMousePress({ button, clientX, clientY, type }) {
     eventTarget.dispatchEvent(new MouseEvent(type, { 'clientX': clientX, 'clientY': clientY, 'button': button, 'mozPressure' : 1.0 }));
 }
 
-let broadcastChannel = new BroadcastChannel('sharedChannel')
-
-// Receive other browsing context action event
-broadcastChannel.onmessage = ({ data: actionEvent}) => { 
-    // handle different types
-    switch (actionEvent.type) {
-        case 'mouseup':
-        case 'mousedown':
-            simulateMousePress({ button: actionEvent.button, clientX: actionEvent.clientX, clientY: actionEvent.clientY, type: actionEvent.type })
-        break;  
-        case 'keydown':
-        case 'keyup':
-            simulateKeyPress({ keyCode: actionEvent.keyCode, type: actionEvent.type })
-        break;
-        case 'mousemove':
-            simulateMouseMove({ type: actionEvent.type, clientX: actionEvent.clientX, clientY: actionEvent.clientY, senderContextViewportWidth: actionEvent.viewportWidth, senderContextViewportHeight: actionEvent.viewportHeight })
-        break;
-        default:
-            console.log(`Receieved unhandle event type ${actionEvent.type}`)
-        break;
+function synchronizeControl() {
+    
+    let broadcastChannel = new BroadcastChannel('sharedChannel')
+    let stopBroadcast = false; // stop propagation of control / user event to other tabs
+    
+    // Receive other browsing context action event
+    broadcastChannel.onmessage = ({ data: actionEvent}) => {
+        if(stopBroadcast) return; // don't react to incoming messages.
+        // handle different types
+        switch (actionEvent.type) {
+            case 'mouseup':
+            case 'mousedown':
+                simulateMousePress({ button: actionEvent.button, clientX: actionEvent.clientX, clientY: actionEvent.clientY, type: actionEvent.type })
+            break;  
+            case 'keydown':
+            case 'keyup':
+                simulateKeyPress({ keyCode: actionEvent.keyCode, type: actionEvent.type })
+            break;
+            case 'mousemove':
+                simulateMouseMove({ type: actionEvent.type, clientX: actionEvent.clientX, clientY: actionEvent.clientY, senderContextViewportWidth: actionEvent.viewportWidth, senderContextViewportHeight: actionEvent.viewportHeight })
+            break;
+            default:
+                console.log(`Receieved unhandle event type ${actionEvent.type}`)
+            break;
+        }
     }
-}
+    
+    /* 
+    *   Add action event listener & broadcast event
+    */
+    let evenTypeArray = ['keydown', 'keyup', 'mousedown', 'mouseup', 'mousemove'] // event to propagate to other contexts
+    for(let eventType of evenTypeArray) {
+        document.addEventListener(eventType, eventAction => {
+            // check if event triggered by a user and not programmatically (prevent infinite loop)
+            if(!eventAction.isTrusted) return;
+    
+            console.log(eventAction)
+            // Check for shift key - holding shift key will prevent propagation
+            if(eventAction.key == 'Shift') {
+                switch (eventAction.type) {
+                    case 'keydown':
+                        stopBroadcast = true
+                        console.log('%s %c%s', '🕹️ Propagation', 'color: Red; font-weight: bold;', 'stopped')
+                    break;
+                    case 'keyup':
+                        stopBroadcast = false
+                        console.log('%s %c%s', '🕹️ Propagation', 'color: Green; font-weight: bold;', 'active')
+                    break;
+                }
+            } 
+            if(stopBroadcast) return;
 
-/* 
-*   Add action event listener & broadcast event
-*/
-let evenTypeArray = ['keydown', 'keyup', 'mousedown', 'mouseup', 'mousemove'] // event to propagate to other contexts
-let shiftKeyHold = false; // state of shift key. Is user holding shift key ?
-for(let eventType of evenTypeArray) {
-    document.addEventListener(eventType, eventAction => {
-        // check if event triggered by a user and not programmatically (prevent infinite loop)
-        if(!eventAction.isTrusted) return;
+            // handle Enter key
+            if(eventAction.key == 'Enter') stopBroadcast = !stopBroadcast // toggle
 
-        console.log(eventAction)
-        // Check for shift key - holding shift key will prevent propagation
-        if(eventAction.key == 'Shift') {
-            switch (eventAction.type) {
-                case 'keydown':
-                    shiftKeyHold = true
-                    console.log('🕹️ Propagation stopped')
-                break;
-                case 'keyup':
-                    shiftKeyHold = false
-                    console.log('🕹️ Propagation active')
-                break;
+            // Extract properies
+            eventActionObject = {
+                // extract all relevant properties
+                type: eventAction.type,
+                clientX: eventAction.clientX,
+                clientY: eventAction.clientY, 
+                button: eventAction.button,
+                keyCode: eventAction.keyCode,
+                which: eventAction.which,
+                shiftKey: eventAction.shiftKey,
             }
-        } 
-        if(shiftKeyHold) return;
+            if(eventAction.type == 'mousemove') { // calculate dimension only for mousemove to prevent unnecessary work.
+                eventActionObject = Object.assign(eventActionObject, {
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight    
+                })
+            }
+            // let eventActionObject = { ...eventAction } // Event properties are propagated to higher prtotype chain // shallow copy, to extract only non nested & non methods values.
+            // let eventActionObject = JSON.parse(JSON.stringify(eventAction)) // because Event has functions, JSON.strigify cannot handle it properly. // Insures all methods/functions are removed, as postMessage accepts only objects.
+    
+            // Propagate current browsing context's action event
+            broadcastChannel.postMessage(eventActionObject)
+        })
+    }
 
-        // Extract properies
-        eventActionObject = {
-            // extract all relevant properties
-            type: eventAction.type,
-            clientX: eventAction.clientX,
-            clientY: eventAction.clientY, 
-            button: eventAction.button,
-            keyCode: eventAction.keyCode,
-            which: eventAction.which,
-            shiftKey: eventAction.shiftKey,
-        }
-        if(eventAction.type == 'mousemove') { // calculate dimension only for mousemove to prevent unnecessary work.
-            eventActionObject = Object.assign(eventActionObject, {
-                viewportWidth: window.innerWidth,
-                viewportHeight: window.innerHeight    
-            })
-        }
-        // let eventActionObject = { ...eventAction } // Event properties are propagated to higher prtotype chain // shallow copy, to extract only non nested & non methods values.
-        // let eventActionObject = JSON.parse(JSON.stringify(eventAction)) // because Event has functions, JSON.strigify cannot handle it properly. // Insures all methods/functions are removed, as postMessage accepts only objects.
+    console.group('%c%s',  'color: Green; font-weight: bold;', `🕹️ Synchronizing control to other tabs.`)
+    console.log('%c%s',  'color: Grey;', `• Hold Shift key to temporarly stop propagation of user event.`)
+    console.log('%c%s',  'color: Grey;', `• Click Enter key to toggle propagation of user event.`)
+    console.groupEnd()
+}    
 
-        // Propagate current browsing context's action event
-        broadcastChannel.postMessage(eventActionObject)
-    })
-}
-
-
+synchronizeControl() // initialize on runtime
