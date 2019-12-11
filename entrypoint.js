@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        DiepIOSyncControl
 // @description Diep.io
-// @version     2.0.1
+// @version     2.0.2
 // @author      tampermonkey
 // @include     https://diep.io/*
 // @connect     diep.io
