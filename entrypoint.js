@@ -3,7 +3,7 @@
 // @description Diep.io
 // @version     2.0.1
 // @author      tampermonkey
-// @include     http://diep.io/*
+// @include     https://diep.io/*
 // @connect     diep.io
 // @run-at      document-start
 // @namespace tampermonkey
