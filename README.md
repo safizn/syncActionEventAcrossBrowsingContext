@@ -8,3 +8,5 @@ API:
   - Executes immediately on load, messaging a shared channel with a specific hard coded name.
   - Press `0` key to toggle broadcast of tab. 
   - Hold `shitft` key to temporarly stop broadcast events - (Implementation should be refined for performance).
+
+![](Screenshot%20-%206%20windows%20with%20different%20vpn%20for%20each%20couple.png?raw=true)
